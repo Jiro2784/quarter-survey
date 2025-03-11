@@ -483,6 +483,8 @@
     margin-top: 0 !important;
   }
   </style>
+  <!-- 設定ファイルを最初に読み込む -->
+  <script src="config.js"></script>
 </head>
 <body>
   <div class="container">
@@ -783,16 +785,15 @@
   </div>
 
   <script>
-    /***********************
-     *  ここにApps ScriptのWebアプリURLを設定
+     /***********************
+     *  環境変数から取得するように変更
      ************************/
-    const APPS_SCRIPT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxOuO0YbbO4qD9_7Dg-Idtu03U7DOlXK8uVRpRSFBwkmD0nmxbDvWAtkefrpOAAUsmf/exec';
-
-    document.addEventListener('DOMContentLoaded', function() {
+    // const APPS_SCRIPT_WEBAPP_URL = '...' の代わりに
+    // CONFIG.APPS_SCRIPT_WEBAPP_URLを使用
+   document.addEventListener('DOMContentLoaded', function() {
       initNavigation();
       initStarRating();
       initFormNavigation();
-    });
 
     // ===== ナビゲーション初期化 =====
     function initNavigation() {
@@ -959,20 +960,16 @@
     }
 
     // 店舗ごとのGoogleマップ口コミURL
-    const storeReviewUrls = {
-      'QUARTER': 'https://g.page/r/CfiWzYV0WLCdEBE/review',
-      'QUARTER RESORT': 'https://g.page/r/CUpu9_cAhdaGEBE/review',
-      'QUARTER SEASONS': 'https://g.page/r/CWAu_dLl0DJmEBE/review',
-      'LINK': 'https://g.page/r/CYLblbqgWXsREBE/review',
-      'iL': 'https://g.page/r/CemPjkInZSpLEBE/review'
-    };
+     const storeReviewUrls = CONFIG.STORE_REVIEW_URLS;
     
     let selectedStore = '';
     
-    // ===== フォーム送信処理 =====
+    // フォーム送信処理
     document.getElementById('surveyForm').addEventListener('submit', handleSubmit);
 
     function handleSubmit(event) {
+    
+    
       event.preventDefault();
       const form = event.target;
       const formData = new FormData(form);
@@ -1016,22 +1013,23 @@
       }
 
       // ===== fetch で Apps Script へ送信 =====
-      fetch("https://script.google.com/macros/s/AKfycbxOuO0YbbO4qD9_7Dg-Idtu03U7DOlXK8uVRpRSFBwkmD0nmxbDvWAtkefrpOAAUsmf/exec", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataObj)
-      })
-      .then(res => res.json())
-      .then(result => {
-        console.log('送信成功:', result);
-        if (!result.success) {
-          alert('エラーが発生しました: ' + result.error);
-        }
-      })
-      .catch(err => {
-        console.error('送信エラー:', err);
-        alert('送信中に問題が発生しました。もう一度お試しください。');
-      });
+      fetch(CONFIG.APPS_SCRIPT_WEBAPP_URL, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(dataObj)
+})
+.then(res => res.json())
+.then(result => {
+  console.log('送信成功:', result);
+  if (!result.success) {
+    alert('エラーが発生しました: ' + result.error);
+  }
+})
+.catch(err => {
+  console.error('送信エラー:', err);
+  alert('送信中に問題が発生しました。もう一度お試しください。');
+});
+
     }
 
     // ===== コメントコピー機能 =====
