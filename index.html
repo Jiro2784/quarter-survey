@@ -785,285 +785,284 @@
   </div>
 
   <script>
-     /***********************
-     *  環境変数から取得するように変更
-     ************************/
-    // const APPS_SCRIPT_WEBAPP_URL = '...' の代わりに
-    // CONFIG.APPS_SCRIPT_WEBAPP_URLを使用
-   document.addEventListener('DOMContentLoaded', function() {
-      initNavigation();
-      initStarRating();
-      initFormNavigation();
+  document.addEventListener('DOMContentLoaded', function() {
+  // CONFIGオブジェクトの存在チェック
+  if (typeof CONFIG === 'undefined') {
+    console.error('CONFIG オブジェクトが見つかりません。config.jsファイルが正しく読み込まれているか確認してください。');
+    alert('設定ファイルの読み込みエラーが発生しました。ページを再読み込みしてください。');
+    return;
+  }
+  // グローバル変数
+  let selectedStore = '';
+  const storeReviewUrls = CONFIG.STORE_REVIEW_URLS;
 
-    // ===== ナビゲーション初期化 =====
-    function initNavigation() {
-      const navItems = document.querySelectorAll('.nav-item');
+  // 初期化関数を呼び出し
+  initNavigation();
+  initStarRating();
+  initFormNavigation();
+  
+  // フォーム送信処理
+  document.getElementById('surveyForm').addEventListener('submit', handleSubmit);
+
+  // ===== ナビゲーション初期化 =====
+  function initNavigation() {
+    const navItems = document.querySelectorAll('.nav-item');
+    
+    function updateNavigation() {
+      const viewportHeight = window.innerHeight;
+      const sections = {
+        store: Array.from(document.querySelectorAll('[data-section="store"]')),
+        rating: Array.from(document.querySelectorAll('[data-section="rating"]')),
+        info: Array.from(document.querySelectorAll('[data-section="info"]')),
+        service: Array.from(document.querySelectorAll('[data-section="service"]')),
+        feedback: Array.from(document.querySelectorAll('[data-section="feedback"]'))
+      };
       
-      function updateNavigation() {
-        const viewportHeight = window.innerHeight;
-        const sections = {
-          store: Array.from(document.querySelectorAll('[data-section="store"]')),
-          rating: Array.from(document.querySelectorAll('[data-section="rating"]')),
-          info: Array.from(document.querySelectorAll('[data-section="info"]')),
-          service: Array.from(document.querySelectorAll('[data-section="service"]')),
-          feedback: Array.from(document.querySelectorAll('[data-section="feedback"]'))
-        };
+      let mostVisibleSection = 'store';  
+      let maxVisibility = 0;
+      
+      for (const section in sections) {
+        const elements = sections[section];
+        if (elements.length === 0) continue;
         
-        let mostVisibleSection = 'store';  
-        let maxVisibility = 0;
-        
-        for (const section in sections) {
-          const elements = sections[section];
-          if (elements.length === 0) continue;
-          
-          let sectionVisibility = 0;
-          for (const element of elements) {
-            const rect = element.getBoundingClientRect();
-            if (rect.top < viewportHeight && rect.bottom > 0) {
-              const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
-              const elementVisibility = visibleHeight / rect.height;
-              sectionVisibility += elementVisibility;
-            }
-          }
-          if (sectionVisibility > maxVisibility) {
-            maxVisibility = sectionVisibility;
-            mostVisibleSection = section;
+        let sectionVisibility = 0;
+        for (const element of elements) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top < viewportHeight && rect.bottom > 0) {
+            const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+            const elementVisibility = visibleHeight / rect.height;
+            sectionVisibility += elementVisibility;
           }
         }
-        
-        navItems.forEach(item => {
-          const itemSection = item.getAttribute('data-section');
-          if (itemSection === mostVisibleSection) {
-            item.classList.add('active');
-          } else {
-            item.classList.remove('active');
-          }
-        });
+        if (sectionVisibility > maxVisibility) {
+          maxVisibility = sectionVisibility;
+          mostVisibleSection = section;
+        }
       }
       
       navItems.forEach(item => {
-        item.addEventListener('click', function() {
-          const targetSection = this.getAttribute('data-section');
-          const targetElements = document.querySelectorAll('[data-section="' + targetSection + '"]');
-          
-          if (targetElements.length > 0) {
-            targetElements[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
-            setTimeout(() => {
-              navItems.forEach(navItem => navItem.classList.remove('active'));
-              this.classList.add('active');
-            }, 100);
-          }
-        });
+        const itemSection = item.getAttribute('data-section');
+        if (itemSection === mostVisibleSection) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
       });
-      
-      let scrollTimeout;
-      window.addEventListener('scroll', function() {
-        if (scrollTimeout) clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(updateNavigation, 100);
-      });
-      
-      updateNavigation();
     }
     
-    // ===== 星評価の初期化 =====
-    function initStarRating() {
-      const stars = document.querySelectorAll('.star');
-      const ratingScore = document.getElementById('ratingScore');
-      const scoreValue = document.getElementById('scoreValue');
-      const lowRatingWarning = document.getElementById('lowRatingWarning');
-      let selectedRating = 0;
-      
-      stars.forEach(star => {
-        star.addEventListener('mouseover', function() {
-          const value = parseInt(star.getAttribute('data-value'));
-          highlightStars(value);
-        });
+    navItems.forEach(item => {
+      item.addEventListener('click', function() {
+        const targetSection = this.getAttribute('data-section');
+        const targetElements = document.querySelectorAll('[data-section="' + targetSection + '"]');
+        
+        if (targetElements.length > 0) {
+          targetElements[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(() => {
+            navItems.forEach(navItem => navItem.classList.remove('active'));
+            this.classList.add('active');
+          }, 100);
+        }
       });
-      
-      document.getElementById('starsContainer').addEventListener('mouseout', function() {
-        highlightStars(selectedRating);
+    });
+    
+    let scrollTimeout;
+    window.addEventListener('scroll', function() {
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(updateNavigation, 100);
+    });
+    
+    updateNavigation();
+  }
+  
+  // ===== 星評価の初期化 =====
+  function initStarRating() {
+    const stars = document.querySelectorAll('.star');
+    const ratingScore = document.getElementById('ratingScore');
+    const scoreValue = document.getElementById('scoreValue');
+    const lowRatingWarning = document.getElementById('lowRatingWarning');
+    let selectedRating = 0;
+    
+    stars.forEach(star => {
+      star.addEventListener('mouseover', function() {
+        const value = parseInt(star.getAttribute('data-value'));
+        highlightStars(value);
       });
-      
-      stars.forEach(star => {
-        let lastTap = 0;
-        star.addEventListener('click', function(event) {
-          const value = parseInt(star.getAttribute('data-value'));
-          const requiresDoubleTap = star.getAttribute('data-double-tap') === 'true';
-          
-          if (requiresDoubleTap) {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            if (tapLength < 300 && tapLength > 0) {
-              selectRating(value);
-              lastTap = 0;
-              star.classList.add('pulse');
-              setTimeout(() => star.classList.remove('pulse'), 300);
-            } else {
-              lastTap = currentTime;
-              showLowRatingWarning();
-              event.preventDefault();
-            }
-          } else {
+    });
+    
+    document.getElementById('starsContainer').addEventListener('mouseout', function() {
+      highlightStars(selectedRating);
+    });
+    
+    stars.forEach(star => {
+      let lastTap = 0;
+      star.addEventListener('click', function(event) {
+        const value = parseInt(star.getAttribute('data-value'));
+        const requiresDoubleTap = star.getAttribute('data-double-tap') === 'true';
+        
+        if (requiresDoubleTap) {
+          const currentTime = new Date().getTime();
+          const tapLength = currentTime - lastTap;
+          if (tapLength < 300 && tapLength > 0) {
             selectRating(value);
+            lastTap = 0;
             star.classList.add('pulse');
             setTimeout(() => star.classList.remove('pulse'), 300);
+          } else {
+            lastTap = currentTime;
+            showLowRatingWarning();
+            event.preventDefault();
           }
-        });
+        } else {
+          selectRating(value);
+          star.classList.add('pulse');
+          setTimeout(() => star.classList.remove('pulse'), 300);
+        }
       });
-      
-      function highlightStars(count) {
-        stars.forEach(star => {
-          const starValue = parseInt(star.getAttribute('data-value'));
-          star.classList.toggle('active', starValue <= count);
-        });
-      }
-      
-      function showLowRatingWarning() {
-        lowRatingWarning.classList.add('visible');
-        setTimeout(() => lowRatingWarning.classList.remove('visible'), 3000);
-      }
-      
-      function selectRating(value) {
-        selectedRating = value;
-        highlightStars(value);
-        document.getElementById('star' + value).checked = true;
-        scoreValue.textContent = value;
-        ratingScore.classList.add('visible');
-        lowRatingWarning.classList.remove('visible');
-        document.getElementById('question2').classList.add('completed');
-      }
-    }
+    });
     
-    // ===== フォーム各質問の「入力済み」チェック処理 =====
-    function initFormNavigation() {
-      const questions = document.querySelectorAll('.question');
-      
-      questions.forEach(question => {
-        const inputs = question.querySelectorAll('input[type="radio"], input[type="checkbox"]');
-        inputs.forEach(input => {
-          input.addEventListener('change', () => {
-            question.classList.add('completed');
-          });
-        });
-        
-        const textareas = question.querySelectorAll('textarea');
-        textareas.forEach(textarea => {
-          textarea.addEventListener('input', function() {
-            if (this.value.trim().length > 0) {
-              question.classList.add('completed');
-            } else {
-              question.classList.remove('completed');
-            }
-          });
-        });
+    function highlightStars(count) {
+      stars.forEach(star => {
+        const starValue = parseInt(star.getAttribute('data-value'));
+        star.classList.toggle('active', starValue <= count);
       });
     }
-
-    // 店舗ごとのGoogleマップ口コミURL
-     const storeReviewUrls = CONFIG.STORE_REVIEW_URLS;
     
-    let selectedStore = '';
+    function showLowRatingWarning() {
+      lowRatingWarning.classList.add('visible');
+      setTimeout(() => lowRatingWarning.classList.remove('visible'), 3000);
+    }
     
-    // フォーム送信処理
-    document.getElementById('surveyForm').addEventListener('submit', handleSubmit);
-
-    function handleSubmit(event) {
-    
-    
-      event.preventDefault();
-      const form = event.target;
-      const formData = new FormData(form);
-
-      // 複数チェックボックス対策: 同じキーは配列にまとめる
-      const dataObj = {};
-      for (let [key, val] of formData.entries()) {
-        if (dataObj[key]) {
-          if (!Array.isArray(dataObj[key])) {
-            dataObj[key] = [dataObj[key]];
-          }
-          dataObj[key].push(val);
-        } else {
-          dataObj[key] = val;
-        }
-      }
-
-      // 評価 & 店舗など取得
-      const rating = parseInt(dataObj.rating);
-      selectedStore = dataObj.store || '';
-
-      // 口コミ用コメントをセット
-      let userComments = '';
-      if (dataObj.improvement) userComments += dataObj.improvement + ' ';
-      if (dataObj.otherComments) userComments += dataObj.otherComments;
-      document.getElementById('comment-to-copy').value = userComments.trim();
-
-      // フォームを非表示
-      form.style.display = 'none';
-
-      // 星4以上 -> 口コミ誘導, 3以下 -> サンクスメッセージ
-      if (rating >= 4) {
-        if (rating === 5) {
-          document.querySelector('#review-redirect h2').textContent = '星5ありがとうございます！';
-        } else {
-          document.querySelector('#review-redirect h2').textContent = '星4ありがとうございます！';
-        }
-        document.getElementById('review-redirect').style.display = 'block';
-      } else {
-        document.getElementById('thankyou').style.display = 'block';
-      }
-
-      // ===== fetch で Apps Script へ送信 =====
-      fetch(CONFIG.APPS_SCRIPT_WEBAPP_URL, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(dataObj)
-})
-.then(res => res.json())
-.then(result => {
-  console.log('送信成功:', result);
-  if (!result.success) {
-    alert('エラーが発生しました: ' + result.error);
+    function selectRating(value) {
+      selectedRating = value;
+      highlightStars(value);
+      document.getElementById('star' + value).checked = true;
+      scoreValue.textContent = value;
+      ratingScore.classList.add('visible');
+      lowRatingWarning.classList.remove('visible');
+      document.getElementById('question2').classList.add('completed');
+    }
   }
-})
-.catch(err => {
-  console.error('送信エラー:', err);
-  alert('送信中に問題が発生しました。もう一度お試しください。');
+  
+  // ===== フォーム各質問の「入力済み」チェック処理 =====
+  function initFormNavigation() {
+    const questions = document.querySelectorAll('.question');
+    
+    questions.forEach(question => {
+      const inputs = question.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+      inputs.forEach(input => {
+        input.addEventListener('change', () => {
+          question.classList.add('completed');
+        });
+      });
+      
+      const textareas = question.querySelectorAll('textarea');
+      textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+          if (this.value.trim().length > 0) {
+            question.classList.add('completed');
+          } else {
+            question.classList.remove('completed');
+          }
+        });
+      });
+    });
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    // 複数チェックボックス対策: 同じキーは配列にまとめる
+    const dataObj = {};
+    for (let [key, val] of formData.entries()) {
+      if (dataObj[key]) {
+        if (!Array.isArray(dataObj[key])) {
+          dataObj[key] = [dataObj[key]];
+        }
+        dataObj[key].push(val);
+      } else {
+        dataObj[key] = val;
+      }
+    }
+
+    // 評価 & 店舗など取得
+    const rating = parseInt(dataObj.rating);
+    selectedStore = dataObj.store || '';
+
+    // 口コミ用コメントをセット
+    let userComments = '';
+    if (dataObj.improvement) userComments += dataObj.improvement + ' ';
+    if (dataObj.otherComments) userComments += dataObj.otherComments;
+    document.getElementById('comment-to-copy').value = userComments.trim();
+
+    // フォームを非表示
+    form.style.display = 'none';
+
+    // 星4以上 -> 口コミ誘導, 3以下 -> サンクスメッセージ
+    if (rating >= 4) {
+      if (rating === 5) {
+        document.querySelector('#review-redirect h2').textContent = '星5ありがとうございます！';
+      } else {
+        document.querySelector('#review-redirect h2').textContent = '星4ありがとうございます！';
+      }
+      document.getElementById('review-redirect').style.display = 'block';
+    } else {
+      document.getElementById('thankyou').style.display = 'block';
+    }
+
+    // ===== fetch で Apps Script へ送信 =====
+    fetch(CONFIG.APPS_SCRIPT_WEBAPP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dataObj)
+    })
+    .then(res => res.json())
+    .then(result => {
+      console.log('送信成功:', result);
+      if (!result.success) {
+        alert('エラーが発生しました: ' + result.error);
+      }
+    })
+    .catch(err => {
+      console.error('送信エラー:', err);
+      alert('送信中に問題が発生しました。もう一度お試しください。');
+    });
+  }
+
+  // ===== コメントコピー機能 =====
+  window.copyComment = function() {
+    const commentElement = document.getElementById('comment-to-copy');
+    commentElement.select();
+    document.execCommand('copy');
+    
+    const copyButton = document.getElementById('copy-button');
+    const originalText = copyButton.textContent;
+    copyButton.textContent = 'コピーしました！';
+    copyButton.style.backgroundColor = '#34A853';
+    
+    setTimeout(() => {
+      copyButton.textContent = originalText;
+      copyButton.style.backgroundColor = '#4285F4';
+    }, 2000);
+  };
+
+  // ===== Googleマップへリダイレクト =====
+  window.redirectToGoogleMaps = function() {
+    const url = storeReviewUrls[selectedStore] || storeReviewUrls['QUARTER'];
+    window.open(url, '_blank');
+  };
 });
 
-    }
-
-    // ===== コメントコピー機能 =====
-    function copyComment() {
-      const commentElement = document.getElementById('comment-to-copy');
-      commentElement.select();
-      document.execCommand('copy');
-      
-      const copyButton = document.getElementById('copy-button');
-      const originalText = copyButton.textContent;
-      copyButton.textContent = 'コピーしました！';
-      copyButton.style.backgroundColor = '#34A853';
-      
-      setTimeout(() => {
-        copyButton.textContent = originalText;
-        copyButton.style.backgroundColor = '#4285F4';
-      }, 2000);
-    }
-
-    // ===== Googleマップへリダイレクト =====
-    function redirectToGoogleMaps() {
-      const url = storeReviewUrls[selectedStore] || storeReviewUrls['QUARTER'];
-      window.open(url, '_blank');
-    }
-
-    // ===== ページ読み込み完了時に警告を非表示 (外部ホスティングではあまり必要ない) =====
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        const warnings = document.querySelectorAll('.apps-script-warning, div[role="alert"], .script-application-auth');
-        warnings.forEach(el => {
-          if(el) el.style.display = 'none';
-        });
-      }, 100);
+// ===== ページ読み込み完了時に警告を非表示 (外部ホスティングではあまり必要ない) =====
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    const warnings = document.querySelectorAll('.apps-script-warning, div[role="alert"], .script-application-auth');
+    warnings.forEach(el => {
+      if(el) el.style.display = 'none';
     });
+  }, 100);
+});
   </script>
 </body>
 </html>
