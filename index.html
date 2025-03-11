@@ -9,7 +9,7 @@
   <script>
     const CONFIG = {
       // Apps Script WebアプリのURL
-      APPS_SCRIPT_WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxL2uUvLOjjpip3wHwFDzz2cffOZGAwy16pdv0WIh24r_dq3d5VYBolzuQRzHYJFWTvwg/exec',
+      APPS_SCRIPT_WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbyq7TzRa9gODCBx17dvJpJG0geVjCFZg2PlxiFmppo5g6QR-WDJJrfZtMQM-CoSVoN-FA/exec',
       
       // 店舗ごとのGoogleマップ口コミURL
       STORE_REVIEW_URLS: {
@@ -1022,8 +1022,8 @@
       // ===== fetch で Apps Script へ送信 =====
       fetch(CONFIG.APPS_SCRIPT_WEBAPP_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataObj)
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, // シンプルリクエスト
+  body: new URLSearchParams(dataObj)
       })
       .then(res => res.json())
       .then(result => {
