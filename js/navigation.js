@@ -1,109 +1,83 @@
 /**
- * ナビゲーション機能
- * セクション間のナビゲーションとスクロール管理を担当
+ * QUARTERアンケート - ナビゲーション機能
  */
 
-// DOM読み込み完了後に初期化
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('ナビゲーション初期化開始');
-  initNavigation();
-});
-
-/**
- * ナビゲーションバーの機能を初期化
- */
-function initNavigation() {
-  const navItems = document.querySelectorAll('.nav-item');
-  console.log('ナビゲーションアイテム数:', navItems.length);
+// 即時実行で初期化（最も確実な方法）
+(function() {
+  // ページ読み込み完了後に初期化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNavigation);
+  } else {
+    // すでに読み込み完了している場合は直接実行
+    initNavigation();
+  }
   
-  // クリック・タップイベントの追加
-  navItems.forEach(item => {
-    // クリックイベント
-    item.addEventListener('click', function(e) {
-      e.preventDefault(); // 重要: デフォルト動作を防止
-      console.log('ナビアイテムがクリックされました:', this.getAttribute('data-section'));
-      navigateToSection(this);
+  /**
+   * ナビゲーション機能の初期化
+   */
+  function initNavigation() {
+    console.log('【ナビゲーション】初期化開始');
+    
+    // ナビゲーションアイテムを取得
+    const navItems = document.querySelectorAll('.nav-item');
+    console.log('【ナビゲーション】アイテム数:', navItems.length);
+    
+    // クリックイベントを設定（シンプルに保つ）
+    navItems.forEach(item => {
+      item.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const section = this.getAttribute('data-section');
+        console.log('【ナビゲーション】クリック:', section);
+        
+        // 該当セクションの要素を探す（複数ある場合は最初の要素）
+        const targetElement = document.querySelector('.question[data-section="' + section + '"]');
+        
+        if (targetElement) {
+          console.log('【ナビゲーション】要素発見:', targetElement);
+          
+          // スクロール処理（複数の方法を試す）
+          try {
+            // 1. scrollIntoView - シンプルな方法
+            targetElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+            
+            // 2. 代替方法 - 位置を計算して手動スクロール
+            setTimeout(function() {
+              const rect = targetElement.getBoundingClientRect();
+              const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+              const targetTop = rect.top + scrollTop - 80; // ヘッダー分の調整
+              
+              window.scrollTo({
+                top: targetTop,
+                behavior: 'smooth'
+              });
+            }, 10);
+            
+            // アクティブ状態の更新
+            navItems.forEach(navItem => navItem.classList.remove('active'));
+            this.classList.add('active');
+          } catch (error) {
+            console.error('【ナビゲーション】スクロールエラー:', error);
+          }
+        } else {
+          console.error('【ナビゲーション】対象要素が見つかりません:', section);
+          console.log('利用可能なセクション:', 
+            Array.from(document.querySelectorAll('.question[data-section]'))
+              .map(el => el.getAttribute('data-section'))
+          );
+        }
+        
+        return false; // イベントキャンセル
+      };
     });
     
-    // タッチイベント（モバイル用）
-    item.addEventListener('touchend', function(e) {
-      e.preventDefault(); // 重要: デフォルト動作を防止
-      console.log('ナビアイテムがタップされました:', this.getAttribute('data-section'));
-      navigateToSection(this);
-    });
-  });
-}
-
-/**
- * 指定されたセクションに移動
- * @param {HTMLElement} item - クリックされたナビゲーション項目
- */
-function navigateToSection(item) {
-  const targetSection = item.getAttribute('data-section');
-  console.log('移動先セクション:', targetSection);
-  
-  if (!targetSection) {
-    console.error('セクション属性が見つかりません');
-    return;
+    console.log('【ナビゲーション】初期化完了');
   }
   
-  // 対応するセクションの最初の要素を探す (重要な修正: 最初の要素のみを取得)
-  const firstElement = document.querySelector(`[data-section="${targetSection}"]`);
-  console.log('対象要素:', firstElement);
-  
-  if (firstElement) {
-    // スクロール処理の強化
-    try {
-      // 方法1: scrollIntoView
-      firstElement.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
-      
-      // 方法2: バックアップとしてwindow.scrollToも使用
-      const rect = firstElement.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const targetY = rect.top + scrollTop - 50; // ヘッダー分を調整
-      
-      window.scrollTo({
-        top: targetY,
-        behavior: 'smooth'
-      });
-      
-      console.log('スクロール実行:', targetY);
-      
-      // アクティブ状態の更新
-      updateNavActiveState(item);
-    } catch (error) {
-      console.error('スクロールエラー:', error);
-    }
-  } else {
-    console.error(`セクション "${targetSection}" の要素が見つかりません`);
-    // すべてのdata-section属性を持つ要素をログ
-    console.log('利用可能なセクション:', Array.from(document.querySelectorAll('[data-section]')).map(el => el.getAttribute('data-section')));
-  }
-}
-
-/**
- * ナビゲーション項目のアクティブ状態を更新
- * @param {HTMLElement} activeItem - アクティブにする項目
- */
-function updateNavActiveState(activeItem) {
-  const navItems = document.querySelectorAll('.nav-item');
-  
-  navItems.forEach(navItem => {
-    navItem.classList.remove('active');
-  });
-  
-  if (activeItem) {
-    activeItem.classList.add('active');
-  }
-}
-
-// グローバルスコープに公開
-window.initNavigation = initNavigation;
-window.navigateToSection = navigateToSection;
-
-// 特定のセレクタの確認をログに出力（デバッグ用）
-console.log('ナビゲーション要素:', document.querySelectorAll('.nav-item').length);
-console.log('セクション要素:', Array.from(document.querySelectorAll('[data-section]')).map(el => el.getAttribute('data-section')));
+  // グローバルに公開
+  window.initNavigation = initNavigation;
+})();
